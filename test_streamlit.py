@@ -20,8 +20,12 @@ journal_data = data[data['Journal'] == journal]
 
 # 计算文章页数
 def calculate_page_length(pages):
-    start, end = pages.split('-')
-    return int(end) - int(start) + 1
+    try:
+        start, end = pages.split('-')
+        return int(end) - int(start) + 1
+    except ValueError:  # 捕获值错误，例如如果`pages`无法被分割或转换为整数
+        return None  # 返回None或者你可以选择返回一个默认值，比如0
+
 
 journal_data['PageLength'] = journal_data['Pages'].apply(calculate_page_length)
 
