@@ -124,3 +124,31 @@ elif explore_type == '作者合作关系':
 
     st.plotly_chart(fig)
 
+elif explore_type == '期刊年度文章平均长度':
+    # 让用户选择年份
+    year_selected = st.selectbox('选择年份', options=sorted(data['Year'].unique(), reverse=True))
+    
+    # 筛选出所选年份的数据
+    data_filtered_by_year = data[data['Year'] == year_selected]
+    
+    # 计算文章页数函数
+    def calculate_page_length(pages):
+        try:
+            start, end = pages.split('-')
+            return int(end) - int(start) + 1
+        except ValueError:
+            return None
+    
+    # 应用文章页数计算函数
+    data_filtered_by_year['PageLength'] = data_filtered_by_year['Pages'].apply(calculate_page_length)
+    
+    # 计算每个期刊的平均文章长度
+    avg_length_by_journal = data_filtered_by_year.groupby('Journal')['PageLength'].mean().dropna().reset_index()
+    
+    # 如果有数据则绘图，否则提示无数据
+    if not avg_length_by_journal.empty:
+        fig = px.bar(avg_length_by_journal, x='Journal', y='PageLength',
+                     title=f'{year_selected}年各期刊平均文章页数', labels={'PageLength': '平均页数'})
+        st.plotly_chart(fig)
+    else:
+        st.write(f'{year_selected}年没有可用的期刊数据。')
