@@ -8,7 +8,7 @@ import networkx as nx
 # 加载数据
 @st.cache_data
 def load_data():
-    return pd.read_csv('/Users/yihong_eric_chen/Desktop/buzpub/bizpub_app_demo/bizpub_clean.csv')
+    return pd.read_csv('bizpub_clean.csv')
 
 data = load_data()
 
