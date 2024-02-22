@@ -6,9 +6,9 @@ from itertools import combinations
 import networkx as nx
 
 # 加载数据
-@st.cache
+@st.cache_data
 def load_data():
-    return pd.read_csv('/mnt/data/bizpub_clean.csv')
+    return pd.read_csv('/Users/yihong_eric_chen/Desktop/buzpub/bizpub_app_demo/bizpub_clean.csv')
 
 data = load_data()
 
