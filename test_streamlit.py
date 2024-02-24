@@ -16,7 +16,11 @@ data = load_data()
 st.title('期刊文章探索应用')
 
 # 选择探索类型
-explore_type = st.sidebar.selectbox('选择探索类型', ['文章长度', '作者合作关系'])
+# 选择探索类型
+explore_type = st.sidebar.selectbox(
+    '选择探索类型', 
+    ['文章长度', '作者合作关系', '期刊年度文章平均长度']
+)
 
 if explore_type == '文章长度':
     # 选择期刊
@@ -25,18 +29,8 @@ if explore_type == '文章长度':
     # 根据期刊筛选数据
     journal_data = data[data['Journal'] == journal]
     
-    # 计算文章页数
-    def calculate_page_length(pages):
-        try:
-            start, end = pages.split('-')
-            return int(end) - int(start) + 1
-        except ValueError:  # 捕获值错误，例如如果`pages`无法被分割或转换为整数
-            return None  # 返回None或者你可以选择返回一个默认值，比如0
-    
-    journal_data['PageLength'] = journal_data['Pages'].apply(calculate_page_length)
-    
     # 文章长度的直方图
-    fig = px.histogram(journal_data, x='PageLength', title=f'{journal}文章页数分布')
+    fig = px.histogram(journal_data, x='Article Length(Pages)', title=f'{journal} 文章页数分布')
     st.plotly_chart(fig)
 
 elif explore_type == '作者合作关系':
@@ -124,6 +118,9 @@ elif explore_type == '作者合作关系':
 
     st.plotly_chart(fig)
 
+
+# ... [此处省略之前的代码] ...
+
 elif explore_type == '期刊年度文章平均长度':
     # 让用户选择年份
     year_selected = st.selectbox('选择年份', options=sorted(data['Year'].unique(), reverse=True))
@@ -131,24 +128,33 @@ elif explore_type == '期刊年度文章平均长度':
     # 筛选出所选年份的数据
     data_filtered_by_year = data[data['Year'] == year_selected]
     
-    # 计算文章页数函数
-    def calculate_page_length(pages):
-        try:
-            start, end = pages.split('-')
-            return int(end) - int(start) + 1
-        except ValueError:
-            return None
+    # 获取详细的期刊信息
+    detailed_info = data_filtered_by_year.groupby('Journal').agg({
+        'Volume': lambda x: ', '.join(map(str, x.dropna().unique())),
+        'Issue': lambda x: ', '.join(map(str, x.dropna().unique()))
+    }).reset_index()
     
-    # 应用文章页数计算函数
-    data_filtered_by_year['PageLength'] = data_filtered_by_year['Pages'].apply(calculate_page_length)
+    # 构建字符串，详细说明数据来源
+    detailed_info_str = '<br>'.join(
+        f"{row['Journal']}: Volume {row['Volume']}, Issues {row['Issue']}"
+        for _, row in detailed_info.iterrows()
+    )
+    
+    # 将详细信息显示在页面上，使用markdown以支持HTML内容
+    st.markdown(f"数据来源：{year_selected}年，包含以下期刊和卷期信息：<br>{detailed_info_str}", unsafe_allow_html=True)
     
     # 计算每个期刊的平均文章长度
-    avg_length_by_journal = data_filtered_by_year.groupby('Journal')['PageLength'].mean().dropna().reset_index()
+    avg_length_by_journal = data_filtered_by_year.groupby('Journal')['Article Length(Pages)'].mean().dropna().reset_index()
     
     # 如果有数据则绘图，否则提示无数据
     if not avg_length_by_journal.empty:
-        fig = px.bar(avg_length_by_journal, x='Journal', y='PageLength',
-                     title=f'{year_selected}年各期刊平均文章页数', labels={'PageLength': '平均页数'})
+        # 创建水平条形图
+        fig = px.bar(avg_length_by_journal, y='Journal', x='Article Length(Pages)',
+                     title=f'{year_selected}年各期刊平均文章页数',
+                     labels={'Article Length(Pages)': '平均页数', 'Journal': '期刊'},
+                     orientation='h')  # orientation='h' 指定画水平条形图
+        fig.update_layout(yaxis={'categoryorder':'total ascending'})  # 使条形图按数值排序
+        
         st.plotly_chart(fig)
     else:
         st.write(f'{year_selected}年没有可用的期刊数据。')
